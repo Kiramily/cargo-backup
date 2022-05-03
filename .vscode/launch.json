@@ -1,0 +1,138 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests in library 'cargo-backup'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--lib",
+					"--package=cargo-backup"
+				],
+				"filter": {
+					"name": "cargo-backup",
+					"kind": "lib"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug executable 'cargo-sync'",
+			"cargo": {
+				"args": [
+					"build",
+					"--bin=cargo-sync",
+					"--package=cargo-backup"
+				],
+				"filter": {
+					"name": "cargo-sync",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests in executable 'cargo-sync'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--bin=cargo-sync",
+					"--package=cargo-backup"
+				],
+				"filter": {
+					"name": "cargo-sync",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug executable 'cargo-backup'",
+			"cargo": {
+				"args": [
+					"build",
+					"--bin=cargo-backup",
+					"--package=cargo-backup"
+				],
+				"filter": {
+					"name": "cargo-backup",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests in executable 'cargo-backup'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--bin=cargo-backup",
+					"--package=cargo-backup"
+				],
+				"filter": {
+					"name": "cargo-backup",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug executable 'cargo-restore'",
+			"cargo": {
+				"args": [
+					"build",
+					"--bin=cargo-restore",
+					"--package=cargo-backup"
+				],
+				"filter": {
+					"name": "cargo-restore",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests in executable 'cargo-restore'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--bin=cargo-restore",
+					"--package=cargo-backup"
+				],
+				"filter": {
+					"name": "cargo-restore",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		}
+	]
+}
