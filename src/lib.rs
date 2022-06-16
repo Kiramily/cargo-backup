@@ -3,6 +3,13 @@ use duct::cmd;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub mod web {
+    pub mod types {
+        pub mod github;
+    }
+    pub mod github;
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Crates {
     installs: HashMap<String, Install>,
