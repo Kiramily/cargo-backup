@@ -1,4 +1,7 @@
-use cargo_backup::web::github::{BackupProvider, GithubApi};
+use cargo_backup::{
+    restore,
+    web::github::{BackupProvider, GithubApi},
+};
 use clap::{command, Command};
 
 #[tokio::main]
@@ -22,6 +25,11 @@ async fn main() {
         }
         Some(("push", _)) => {
             git.push_backup().await.expect("Failed to push backup");
+        }
+        Some(("pull", _)) => {
+            let packages = git.fetch_backup().await.expect("Failed to pull backup");
+
+            restore(packages)
         }
         _ => unreachable!(),
     }

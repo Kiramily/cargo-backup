@@ -13,7 +13,6 @@ pub trait BackupProvider {
     async fn new() -> Self;
     async fn login(self) -> Result<(), Box<dyn Error>>;
     async fn fetch_backup(self) -> Result<Vec<Package>, Box<dyn Error>>;
-    async fn compare_backup(self, backup: Vec<Package>) -> Result<(), Box<dyn Error>>;
     async fn push_backup(self) -> Result<(), Box<dyn Error>>;
 }
 
@@ -100,11 +99,31 @@ impl BackupProvider for GithubApi {
     }
 
     async fn fetch_backup(self) -> Result<Vec<Package>, Box<dyn Error>> {
-        unimplemented!()
-    }
+        let auth = read_auth(&self.config_dir.clone())?;
 
-    async fn compare_backup(self, backup: Vec<Package>) -> Result<(), Box<dyn Error>> {
-        todo!()
+        // Read the gist
+        let gist: GithubGist = ureq::get(&format!(
+            "https://api.github.com/gists/{}",
+            auth.gist_id.unwrap()
+        ))
+        .set("Accept", "application/json")
+        .set("Authorization", &format!("token {}", auth.access_token))
+        .set("Content-Type", "application/json")
+        .set(
+            "User-Agent",
+            &format!("CargoBackup/{}", env!("CARGO_PKG_VERSION")),
+        )
+        .set("Authorization", &format!("token {}", auth.access_token))
+        .call()?
+        .into_json()?;
+
+        let mut packages: Vec<Package> = Vec::new();
+        for file in gist.files.values() {
+            if file.filename == "backup.json" {
+                packages = serde_json::from_str(&file.content.as_ref().unwrap())?;
+            }
+        }
+        Ok(packages)
     }
 
     async fn push_backup(self) -> Result<(), Box<dyn Error>> {
@@ -175,6 +194,13 @@ impl BackupProvider for GithubApi {
         }
         Ok(())
     }
+}
+
+fn read_auth(config_dir: &PathBuf) -> Result<GithubOauth, Box<dyn Error>> {
+    let mut config = config_dir.clone();
+    config.push("github.auth");
+    let auth: GithubOauth = serde_json::from_reader(std::fs::File::open(config).unwrap()).unwrap();
+    Ok(auth)
 }
 
 /// Write the auth to a file

@@ -1,5 +1,6 @@
 use dialoguer::{theme::ColorfulTheme, MultiSelect};
 use duct::cmd;
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -29,10 +30,15 @@ pub struct Package {
     pub features: Vec<String>,
     pub all_features: bool,
     pub no_default_features: bool,
+    pub version: Version,
 }
 
-fn slice_name(name: String) -> String {
-    name[..name.find(' ').unwrap_or(name.len())].to_string()
+fn slice_name(name: String) -> (String, Version) {
+    // Slice the name and Version
+    let name = name.split(" ").collect::<Vec<&str>>();
+    let version = Version::parse(&name[1].to_string()).unwrap();
+
+    (name[0].to_string(), version)
 }
 
 /// Get a list of installed packages
@@ -55,8 +61,11 @@ pub fn get_packages() -> Vec<Package> {
     let mut pkgs = Vec::new();
 
     for (name, install) in packages.installs {
+        let (name, version) = slice_name(name);
+
         let pkg = Package {
-            name: slice_name(name),
+            name,
+            version,
             features: install.features,
             all_features: install.all_features,
             no_default_features: install.no_default_features,
