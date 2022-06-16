@@ -34,3 +34,7 @@ dirs = "4.0.0"
 shellexpand = "2.1.0"
 dialoguer = "0.10.0"
 duct = "0.13.5"
+ureq = { version = "2.4.0", features = ["json"] }
+tokio = { version = "1.19.2", features = ["rt-multi-thread", "macros"] }
+async-trait = "0.1.56"
+semver = { version = "1.0.10", features = ["serde"] }
