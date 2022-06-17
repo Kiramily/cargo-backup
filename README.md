@@ -1,4 +1,9 @@
 # cargo backup
+<p align="center">
+	<img src="https://img.shields.io/crates/v/cargo-backup" />
+	<img src="https://img.shields.io/crates/d/cargo-backup" />
+	<img src="https://img.shields.io/crates/l/cargo-backup" />
+</p>
 
 Backup your installed cargo packages
 
@@ -12,17 +17,15 @@ Backup your installed cargo packages
 
 `$ cargo backup -o <output file>`
 
-default output file is _cwd_/backup.json
+default output file is `<current directory>/backup.json`
 
 `$ cargo restore -i <input file>`
 
 input file is required
 
-# TODO
+## Sync
+You need to login first with
 
-- [ ] Sync
+`$ cargo sync login`
 
-- - [ ] gist integration
-- - [ ] pull packages
-- - [ ] push packages
-- - [ ] merge packages
+you can use `push` and `pull` after that
