@@ -1,36 +1,29 @@
-use crate::web::types::github::{GitHubCode, GithubGist, GithubOauth, OAuthErrorCode};
+use crate::web::provider::BackupProvider;
+use crate::web::types::github::{Code, Gist, OAuth, OAuthErrorCode};
 use crate::{get_packages, Package};
 use async_trait::async_trait;
 use serde_json::json;
 use std::error::Error;
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
-use std::thread::{self};
+use std::path::{Path, PathBuf};
+use std::thread;
 
-#[async_trait]
-pub trait BackupProvider {
-    async fn new() -> Self;
-    async fn login(self) -> Result<(), Box<dyn Error>>;
-    async fn fetch_backup(self) -> Result<Vec<Package>, Box<dyn Error>>;
-    async fn push_backup(self) -> Result<(), Box<dyn Error>>;
-}
-
-pub struct GithubApi {
+pub struct Api {
     config_dir: PathBuf,
 }
 
 pub struct Backup {}
 
 #[async_trait]
-impl BackupProvider for GithubApi {
+impl BackupProvider for Api {
     async fn new() -> Self {
         let mut config_dir = dirs::config_dir().unwrap();
         config_dir.push("cargo-backup");
         if !config_dir.exists() {
             fs::create_dir(&config_dir).unwrap();
         }
-        GithubApi { config_dir }
+        Api { config_dir }
     }
 
     async fn login(self) -> Result<(), Box<dyn Error>> {
@@ -41,7 +34,7 @@ impl BackupProvider for GithubApi {
         }
 
         // Request a device code from GitHub
-        let device_login: GitHubCode = ureq::post(&format!(
+        let device_login: Code = ureq::post(&format!(
             "https://github.com/login/device/code?client_id={}&scope={}",
             "65102f4f3d896bfc9c1a", "gist"
         ))
@@ -55,12 +48,14 @@ impl BackupProvider for GithubApi {
         println!("{}", device_login.user_code);
 
         let mut has_token = false;
-        let mut auth: Option<GithubOauth> = None;
+        let mut auth: Option<OAuth> = None;
 
         while !has_token {
-            thread::sleep(std::time::Duration::from_secs(device_login.interval as u64));
+            thread::sleep(std::time::Duration::from_secs(u64::from(
+                device_login.interval,
+            )));
             // Check if the user has entered the code
-            let poll_req: GithubOauth = ureq::post(&format!(
+            let poll_req: OAuth = ureq::post(&format!(
                 "https://github.com/login/oauth/access_token?client_id={}&grant_type={}&device_code={}",
                 "65102f4f3d896bfc9c1a", "urn:ietf:params:oauth:grant-type:device_code",
 				device_login.device_code
@@ -93,16 +88,16 @@ impl BackupProvider for GithubApi {
         assert!(auth.is_some());
         let auth = auth.unwrap();
 
-        write_auth(auth, &self.config_dir.clone());
+        write_auth(&auth, &self.config_dir);
 
         Ok(())
     }
 
     async fn fetch_backup(self) -> Result<Vec<Package>, Box<dyn Error>> {
-        let auth = read_auth(&self.config_dir.clone())?;
+        let auth = read_auth(&self.config_dir);
 
         // Read the gist
-        let gist: GithubGist = ureq::get(&format!(
+        let gist: Gist = ureq::get(&format!(
             "https://api.github.com/gists/{}",
             auth.gist_id.unwrap()
         ))
@@ -120,7 +115,7 @@ impl BackupProvider for GithubApi {
         let mut packages: Vec<Package> = Vec::new();
         for file in gist.files.values() {
             if file.filename == "backup.json" {
-                packages = serde_json::from_str(&file.content.as_ref().unwrap())?;
+                packages = serde_json::from_str(file.content.as_ref().unwrap())?;
             }
         }
         Ok(packages)
@@ -129,7 +124,7 @@ impl BackupProvider for GithubApi {
     async fn push_backup(self) -> Result<(), Box<dyn Error>> {
         let mut config = self.config_dir.clone();
         config.push("github.auth");
-        let mut auth: GithubOauth =
+        let mut auth: OAuth =
             serde_json::from_reader(std::fs::File::open(config).unwrap()).unwrap();
 
         let packages = get_packages();
@@ -164,7 +159,7 @@ impl BackupProvider for GithubApi {
             }
         } else {
             // Create a new gist
-            let new_gist = ureq::post(&format!("https://api.github.com/gists",))
+            let new_gist = ureq::post("https://api.github.com/gists")
                 .set("Accept", "application/json")
                 .set("Content-Type", "application/json")
                 .set(
@@ -186,25 +181,25 @@ impl BackupProvider for GithubApi {
                     }
                 }))?;
 
-            let new_gist: GithubGist = new_gist.into_json()?;
+            let new_gist: Gist = new_gist.into_json()?;
             let gist_id = new_gist.id;
             auth.gist_id = Some(gist_id.clone());
-            write_auth(auth, &self.config_dir.clone());
+            write_auth(&auth, &self.config_dir);
             println!("Created gist {} ", gist_id);
         }
         Ok(())
     }
 }
 
-fn read_auth(config_dir: &PathBuf) -> Result<GithubOauth, Box<dyn Error>> {
-    let mut config = config_dir.clone();
+fn read_auth(config_dir: &Path) -> OAuth {
+    let mut config: PathBuf = config_dir.to_path_buf();
     config.push("github.auth");
-    let auth: GithubOauth = serde_json::from_reader(std::fs::File::open(config).unwrap()).unwrap();
-    Ok(auth)
+    let auth: OAuth = serde_json::from_reader(std::fs::File::open(config).unwrap()).unwrap();
+    auth
 }
 
 /// Write the auth to a file
-fn write_auth(auth: GithubOauth, dir: &PathBuf) {
+fn write_auth(auth: &OAuth, dir: &PathBuf) {
     let mut auth_file = dir.clone();
     if !dir.exists() {
         fs::create_dir(dir).unwrap();

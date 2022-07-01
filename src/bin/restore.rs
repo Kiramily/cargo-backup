@@ -31,7 +31,7 @@ fn main() {
             let packages: Vec<Package> =
                 serde_json::from_str(&backup).expect("Failed to deserialize");
 
-            restore(packages)
+            restore(&packages)
         }
         _ => unreachable!(),
     }

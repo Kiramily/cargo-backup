@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 use dialoguer::{theme::ColorfulTheme, MultiSelect};
 use duct::cmd;
 use semver::Version;
@@ -9,6 +10,7 @@ pub mod web {
         pub mod github;
     }
     pub mod github;
+    pub mod provider;
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,10 +35,10 @@ pub struct Package {
     pub version: Version,
 }
 
-fn slice_name(name: String) -> (String, Version) {
+fn slice_name(name: &str) -> (String, Version) {
     // Slice the name and Version
-    let name = name.split(" ").collect::<Vec<&str>>();
-    let version = Version::parse(&name[1].to_string()).unwrap();
+    let name = name.split(' ').collect::<Vec<&str>>();
+    let version = Version::parse(name[1]).unwrap();
 
     (name[0].to_string(), version)
 }
@@ -47,13 +49,14 @@ fn slice_name(name: String) -> (String, Version) {
 ///
 /// A list of installed packages
 ///
+/// # Panics
+/// Uuuh i don't know
+#[must_use]
 pub fn get_packages() -> Vec<Package> {
     let mut path = dirs::home_dir().unwrap();
     path.push(".cargo/.crates2.json");
 
-    if !path.exists() {
-        panic!("{} does not exist", path.display());
-    }
+    assert!(path.exists(), "{} does not exist", path.display());
 
     let packages: Crates = serde_json::from_str(std::fs::read_to_string(path).unwrap().as_str())
         .expect("Failed to parse crates2.json");
@@ -61,7 +64,7 @@ pub fn get_packages() -> Vec<Package> {
     let mut pkgs = Vec::new();
 
     for (name, install) in packages.installs {
-        let (name, version) = slice_name(name);
+        let (name, version) = slice_name(&name);
 
         let pkg = Package {
             name,
@@ -106,7 +109,10 @@ fn install_package(package: &Package) {
 ///
 /// * `packages` - The list of packages to select from
 ///
-pub fn restore(packages: Vec<Package>) {
+/// # Panics
+/// Uuuh i don't know x2
+///
+pub fn restore(packages: &[Package]) {
     let selected_packages = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Packages to install")
         .items(

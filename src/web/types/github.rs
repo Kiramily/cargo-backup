@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GitHubCode {
+pub struct Code {
     pub device_code: String,
     pub user_code: String,
     pub verification_uri: String,
@@ -12,7 +12,7 @@ pub struct GitHubCode {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GithubOauth {
+pub struct OAuth {
     #[serde(default)]
     pub access_token: String,
     #[serde(default)]
@@ -20,6 +20,17 @@ pub struct GithubOauth {
     #[serde(default, skip_serializing)]
     pub error: OAuthErrorCode,
     pub gist_id: Option<String>,
+}
+
+impl Default for OAuth {
+    fn default() -> Self {
+        OAuth {
+            access_token: String::new(),
+            token_type: String::new(),
+            error: OAuthErrorCode::None,
+            gist_id: None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,7 +53,7 @@ impl Default for OAuthErrorCode {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GithubGist {
+pub struct Gist {
     #[serde(rename = "id", skip_serializing)]
     pub id: String,
 
