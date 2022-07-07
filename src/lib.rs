@@ -113,6 +113,23 @@ fn install_package(package: &Package) {
 /// Uuuh i don't know x2
 ///
 pub fn restore(packages: &[Package]) {
+    // Get the name of the currently installed packages
+    let installed_packages = get_packages()
+        .iter()
+        .map(|p| p.name.clone())
+        .collect::<Vec<_>>();
+
+    // Compare the installed packages to the list of packages to restore
+    let packages = packages
+        .iter()
+        .filter(|p| !installed_packages.contains(&p.name))
+        .collect::<Vec<_>>();
+
+    if packages.is_empty() {
+        println!("No packages to restore");
+        return;
+    }
+
     let selected_packages = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Packages to install")
         .items(
