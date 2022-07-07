@@ -1,7 +1,6 @@
-use std::fs;
-
 use cargo_backup::{get_packages, Package};
 use clap::{command, Arg, Command};
+use std::fs;
 
 fn main() {
     let args = Command::new("cargo")

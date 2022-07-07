@@ -1,4 +1,4 @@
-use crate::web::provider::BackupProvider;
+use super::provider::Backup;
 use crate::web::types::github::{Code, Gist, OAuth, OAuthErrorCode};
 use crate::{get_packages, Package};
 use async_trait::async_trait;
@@ -13,10 +13,8 @@ pub struct Api {
     config_dir: PathBuf,
 }
 
-pub struct Backup {}
-
 #[async_trait]
-impl BackupProvider for Api {
+impl Backup for Api {
     async fn new() -> Self {
         let mut config_dir = dirs::config_dir().unwrap();
         config_dir.push("cargo-backup");
