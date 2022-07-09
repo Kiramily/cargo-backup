@@ -7,6 +7,7 @@ use std::error::Error;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::process::exit;
 use std::thread;
 
 pub struct Api {
@@ -93,6 +94,12 @@ impl Backup for Api {
 
     async fn fetch_backup(self) -> Result<Vec<Package>, Box<dyn Error>> {
         let auth = read_auth(&self.config_dir);
+
+        if auth.gist_id.is_none() {
+            println!("Set the gist id via 'set-id' command before pulling");
+            exit(0);
+        }
+
 
         // Read the gist
         let gist: Gist = ureq::get(&format!(
