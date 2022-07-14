@@ -1,9 +1,9 @@
 [package]
 name = "cargo-backup"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Kiramily"]
-keywords = ["cli", "backup", "restore"]
+keywords = ["cli", "backup", "restore", "github", "sync"]
 description = "Backup utilty for cargo"
 license = "MIT"
 repository = "https://github.com/Kiramily/cargo-backup"
