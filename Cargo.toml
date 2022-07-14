@@ -10,6 +10,9 @@ repository = "https://github.com/Kiramily/cargo-backup"
 homepage = "https://github.com/Kiramily/cargo-backup"
 categories = ["command-line-utilities"]
 
+[lib]
+doctest = false
+
 
 [[bin]]
 path = "src/bin/sync.rs"
