@@ -44,13 +44,12 @@ fn slice_name(name: &str) -> (String, Version) {
 }
 
 /// Get a list of installed packages
-///
-/// # Returns
-///
-/// A list of installed packages
+/// ```no_run
+/// let packages = get_packages();
+/// ```
 ///
 /// # Panics
-/// Uuuh i don't know
+/// * If the `crates2.json` can't be read.
 #[must_use]
 pub fn get_packages() -> Vec<Package> {
     let mut path = dirs::home_dir().unwrap();
@@ -58,7 +57,7 @@ pub fn get_packages() -> Vec<Package> {
 
     assert!(path.exists(), "{} does not exist", path.display());
 
-    let packages: Crates = serde_json::from_str(std::fs::read_to_string(path).unwrap().as_str())
+    let packages: Crates = serde_json::from_str(std::fs::read_to_string(path).expect("Failed to read the .crates2.json").as_str())
         .expect("Failed to parse crates2.json");
 
     let mut pkgs = Vec::new();
@@ -79,12 +78,7 @@ pub fn get_packages() -> Vec<Package> {
     pkgs
 }
 
-/// Restore a backup of installed packages
-///
-/// # Arguments
-///
-/// * `packages` - A vector of packages to restore
-///
+/// Installs the given packages with cargo
 fn install_package(package: &Package) {
     let name = &package.name;
     let mut args = vec!["install".to_string(), name.clone()];
@@ -105,13 +99,14 @@ fn install_package(package: &Package) {
 
 /// Prompts the user to select which packages to install
 ///
-/// # Arguments
+/// ```no_run
+/// let packages: Vec<Package> = Vec::new();
 ///
-/// * `packages` - The list of packages to select from
+/// restore(&package);
+/// ```
 ///
 /// # Panics
-/// Uuuh i don't know x2
-///
+/// * If the `MultiSelect` interaction fails
 pub fn restore(packages: &[Package]) {
     // Get the name of the currently installed packages
     let installed_packages = get_packages()

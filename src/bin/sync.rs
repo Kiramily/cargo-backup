@@ -47,7 +47,7 @@ async fn main() {
                 Some(("pull", _)) => {
                     let packages = git.fetch_backup().await.expect("Failed to pull backup");
 
-                    restore(&packages)
+                    restore(&packages);
                 }
                 Some(("set-id", args)) => {
                     // println!("Setting ID to {}", args.value_of("id").unwrap());
