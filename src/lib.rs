@@ -35,12 +35,23 @@ pub struct Package {
     pub version: Version,
 }
 
-fn slice_name(name: &str) -> (String, Version) {
+fn slice_name(name: &str) -> (String, Version, bool) {
     // Slice the name and Version
     let name = name.split(' ').collect::<Vec<&str>>();
     let version = Version::parse(name[1]).unwrap();
+    let should_be_skipped = {
+        name[2].contains("path+file://")
+    };
 
-    (name[0].to_string(), version)
+    (name[0].to_string(), version, should_be_skipped)
+}
+
+#[test]
+fn test_slice_name() {
+    let result = slice_name("package 0.1.0 \"registry+github\"");
+    assert_eq!(result.2, false);
+    let result = slice_name("package 0.1.0 \"path+file://\"");
+    assert_eq!(result.2, true);
 }
 
 /// Get a list of installed packages
@@ -63,7 +74,11 @@ pub fn get_packages() -> Vec<Package> {
     let mut pkgs = Vec::new();
 
     for (name, install) in packages.installs {
-        let (name, version) = slice_name(&name);
+        let (name, version, should_be_skipped) = slice_name(&name);
+
+        if should_be_skipped {
+            continue;
+        }
 
         let pkg = Package {
             name,
