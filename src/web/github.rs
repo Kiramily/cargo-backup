@@ -5,30 +5,37 @@ use async_trait::async_trait;
 use serde_json::json;
 use std::error::Error;
 use std::fs;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::exit;
 use std::thread;
 
 pub struct Api {
     config_dir: PathBuf,
+    keyring: keyring::Entry,
 }
 
 #[async_trait]
 impl Backup for Api {
+    fn get_keyring() -> keyring::Entry { 
+        keyring::Entry::new("cargo-backup", "github")
+    }
+
     async fn new() -> Self {
         let mut config_dir = dirs::config_dir().unwrap();
+
         config_dir.push("cargo-backup");
+
         if !config_dir.exists() {
             fs::create_dir(&config_dir).unwrap();
         }
-        Api { config_dir }
+
+        let keyring = Self::get_keyring();
+
+        Api { config_dir, keyring }
     }
 
     async fn login(self) -> Result<(), Box<dyn Error>> {
-        let mut auth_file = self.config_dir.clone();
-        auth_file.push("github.auth");
-        if auth_file.exists() {
+        if let Ok(_) = self.keyring.get_password() {
             return Ok(());
         }
 
@@ -87,13 +94,14 @@ impl Backup for Api {
         assert!(auth.is_some());
         let auth = auth.unwrap();
 
-        write_auth(&auth, &self.config_dir);
+        self.keyring.set_password(&serde_json::to_string(&auth).expect("Failed to create json string")).expect("Can't save Access Token in the Keyring");
 
         Ok(())
     }
 
     async fn fetch_backup(self) -> Result<Vec<Package>, Box<dyn Error>> {
-        let auth = read_auth(&self.config_dir);
+        let auth: OAuth = serde_json::from_str(&self.keyring.get_password().expect("login first")).expect("Failed to parse json string");
+
 
         if auth.gist_id.is_none() {
             println!("Set the gist id via 'set-id' command before pulling");
@@ -127,10 +135,8 @@ impl Backup for Api {
     }
 
     async fn push_backup(self) -> Result<(), Box<dyn Error>> {
-        let mut config = self.config_dir.clone();
-        config.push("github.auth");
         let mut auth: OAuth =
-            serde_json::from_reader(std::fs::File::open(config).unwrap()).unwrap();
+            serde_json::from_str(&self.keyring.get_password().expect("Failed to read keyring")).expect("Failed to parse json string");
 
         let packages = get_packages();
 
@@ -189,31 +195,10 @@ impl Backup for Api {
             let new_gist: Gist = new_gist.into_json()?;
             let gist_id = new_gist.id;
             auth.gist_id = Some(gist_id.clone());
-            write_auth(&auth, &self.config_dir);
+            self.keyring.set_password(&serde_json::to_string(&auth).expect("Failed to create string")).expect("Failed to write keyring");
             println!("Created gist {} ", gist_id);
         }
         Ok(())
     }
 }
 
-fn read_auth(config_dir: &Path) -> OAuth {
-    let mut config: PathBuf = config_dir.to_path_buf();
-    config.push("github.auth");
-    let auth: OAuth = serde_json::from_reader(std::fs::File::open(config).unwrap()).unwrap();
-    auth
-}
-
-/// Write the auth to a file
-fn write_auth(auth: &OAuth, dir: &PathBuf) {
-    let mut auth_file = dir.clone();
-    if !dir.exists() {
-        fs::create_dir(dir).unwrap();
-    }
-    auth_file.push("github.auth");
-
-    let mut auth_file = std::fs::File::create(auth_file).unwrap();
-
-    auth_file
-        .write_all(serde_json::to_string(&auth).unwrap().as_bytes())
-        .unwrap();
-}
