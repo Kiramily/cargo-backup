@@ -1,13 +1,12 @@
 use cargo_backup::{
     restore,
     web::{
-        github::{self},
+        github,
         provider::Backup,
         types::github::OAuth,
     },
 };
 use clap::{command, Arg, Command};
-use std::fs;
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +23,7 @@ async fn main() {
                 .subcommand(
                     command!("set-id").arg(
                         Arg::new("id")
-                            .help("The ID of the backup to restore")
+                            .help("The ID of the backup to restore from")
                             .required(true)
                             .index(1),
                     ),
@@ -51,24 +50,15 @@ async fn main() {
                 }
                 Some(("set-id", args)) => {
                     // println!("Setting ID to {}", args.value_of("id").unwrap());
-                    let mut auth_file = dirs::config_dir().unwrap();
-                    auth_file.push("cargo-backup/github.auth");
+                    let keyring = github::Api::get_keyring();
 
-                    let mut auth_content: OAuth = OAuth::default();
-
-                    if auth_file.exists() {
-                        auth_content = serde_json::from_reader(
-                            fs::File::open(&auth_file).expect("Failed to open auth file"),
-                        )
-                        .expect("Failed to parse auth file");
+                    if let Ok(password) = keyring.get_password() {
+                        let mut content: OAuth = serde_json::from_str(&password).expect("Failed to parse json string");
+                        content.gist_id = Some(args.value_of("id").unwrap().to_string());
+                        keyring.set_password(&serde_json::to_string(&content).expect("Failed to create json string")).expect("Failed to save content to keyring");
+                    } else {
+                        println!("please login first with \"cargo sync login\"")
                     }
-
-                    auth_content.gist_id = Some(args.value_of("id").unwrap().to_string());
-
-                    let mut auth_file =
-                        fs::File::create(&auth_file).expect("Failed to create auth file");
-                    serde_json::to_writer_pretty(&mut auth_file, &auth_content)
-                        .expect("Failed to write auth file");
                 }
                 _ => unreachable!(),
             }

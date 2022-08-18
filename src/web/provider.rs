@@ -8,4 +8,5 @@ pub trait Backup {
     async fn login(self) -> Result<(), Box<dyn Error>>;
     async fn fetch_backup(self) -> Result<Vec<Package>, Box<dyn Error>>;
     async fn push_backup(self) -> Result<(), Box<dyn Error>>;
+    fn get_keyring() -> keyring::Entry;
 }
