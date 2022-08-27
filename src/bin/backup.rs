@@ -27,7 +27,7 @@ fn main() {
             let out = shellexpand::full(args.value_of("out").unwrap_or("./backup.json"))
                 .expect("Failed to expand path");
 
-            let backup = serde_json::to_string_pretty(&packages).expect("Failed to serialize");
+            let backup = serde_json::to_string(&packages).expect("Failed to serialize");
 
             fs::write(out.to_string(), backup).expect("Failed to write backup");
         }

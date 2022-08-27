@@ -1,15 +1,9 @@
-use cargo_backup::{
-    restore,
-    web::{
-        github,
-        provider::Backup,
-        types::github::OAuth,
-    },
-};
+use cargo_backup::get_packages;
+use cargo_backup::remote::RemoteProvider;
+use cargo_backup::{install_packages, remote::github::Github};
 use clap::{command, Arg, Command};
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args = Command::new("cargo")
         .about("Restores a backup created by cargo-backup")
         .version(env!("CARGO_PKG_VERSION"))
@@ -17,9 +11,44 @@ async fn main() {
         .bin_name("cargo")
         .subcommand(
             command!("sync")
-                .subcommand(command!("login"))
+                .arg(
+                    Arg::new("provider")
+                        .short('p')
+                        .long("provider")
+                        .default_value("github")
+                        .takes_value(true),
+                )
+                .subcommand(
+                    command!("login").arg(
+                        Arg::new("force")
+                            .short('f')
+                            .long("force")
+                            .takes_value(false),
+                    ),
+                )
                 .subcommand(command!("push"))
-                .subcommand(command!("pull"))
+                .subcommand(
+                    command!("pull")
+                        .arg(
+                            Arg::new("skip-install")
+                                .short('i')
+                                .long("skip-install")
+                                .help("Skip package installation"),
+                        )
+                        .arg(
+                            Arg::new("skip-update")
+                                .short('u')
+                                .long("skip-update")
+                                .help("Skip package updates"),
+                        )
+                        .arg(
+                            Arg::new("skip-remove")
+                                .short('r')
+                                .long("skip-remove")
+                                .help("Skip package remove"),
+                        ),
+                )
+                .subcommand(command!("inspect"))
                 .subcommand(
                     command!("set-id").arg(
                         Arg::new("id")
@@ -31,35 +60,31 @@ async fn main() {
         )
         .get_matches();
 
-    let git = github::Api::new().await;
-
     match args.subcommand() {
         Some(("sync", args)) => {
+            let provider = Github::new();
+
             match args.subcommand() {
-                Some(("login", _)) => {
-                    git.login().await.expect("Failed to login");
-                    println!("Successfully logged in");
+                Some(("pull", args)) => {
+                    let packages = provider.pull().unwrap();
+                    install_packages(
+                        &packages,
+                        args.is_present("skip-install"),
+                        args.is_present("skip-update"),
+                        args.is_present("skip-remove"),
+                    )
                 }
                 Some(("push", _)) => {
-                    git.push_backup().await.expect("Failed to push backup");
+                    let packages = get_packages();
+                    provider.push(&packages).unwrap();
                 }
-                Some(("pull", _)) => {
-                    let packages = git.fetch_backup().await.expect("Failed to pull backup");
-
-                    restore(&packages);
+                Some(("login", args)) => {
+                    let force = args.is_present("force");
+                    provider.login(force).unwrap();
                 }
-                Some(("set-id", args)) => {
-                    // println!("Setting ID to {}", args.value_of("id").unwrap());
-                    let keyring = github::Api::get_keyring();
-
-                    if let Ok(password) = keyring.get_password() {
-                        let mut content: OAuth = serde_json::from_str(&password).expect("Failed to parse json string");
-                        content.gist_id = Some(args.value_of("id").unwrap().to_string());
-                        keyring.set_password(&serde_json::to_string(&content).expect("Failed to create json string")).expect("Failed to save content to keyring");
-                    } else {
-                        println!("please login first with \"cargo sync login\"")
-                    }
-                }
+                Some(("set-id", args)) => provider
+                    .set_id(args.value_of("id").unwrap().to_string())
+                    .unwrap(),
                 _ => unreachable!(),
             }
         }
