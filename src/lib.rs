@@ -1,4 +1,5 @@
 use misc::{pretty_print_packages, Errors};
+use owo_colors::OwoColorize;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf, vec};
@@ -160,7 +161,14 @@ fn slice_info(package_str: &str) -> (String, Version, bool) {
     let splits: Vec<&str> = package_str.splitn(3, ' ').collect();
     let name = splits[0].to_string();
     let version = Version::parse(splits[1]).unwrap();
-    let local_package = splits[2].contains("path+file://");
+    let local_package = splits[2].contains("path+file://") || splits[2].contains("git+https://");
+    if local_package {
+        println!(
+            "{} {}",
+            name.blue(),
+            "Package ignored because it is either a local or git Package".red()
+        );
+    }
     (name, version, local_package)
 }
 
@@ -177,6 +185,11 @@ fn test_slice_info() {
     assert_eq!(name, "foo");
     assert_eq!(version, Version::from_str("0.1.0").unwrap());
     assert!(!skip);
+
+    let (name, version, skip) = slice_info("foo 0.1.0 (git+https://github.com/foo/bar#hash)");
+    assert_eq!(name, "foo");
+    assert_eq!(version, Version::from_str("0.1.0").unwrap());
+    assert!(skip);
 }
 
 #[test]

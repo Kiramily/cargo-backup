@@ -27,6 +27,13 @@
 			"all_features": false,
 			"no_default_features": true,
 			"profile": "release"
+		},
+		"git-thing 0.0.0 (git+https://github.com/<user>/<repo>#hash)": {
+			"version_req": null,
+			"features": ["feature1", "feature2"],
+			"all_features": false,
+			"no_default_features": true,
+			"profile": "release"
 		}
 	}
 }
