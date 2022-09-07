@@ -15,6 +15,7 @@ fn main() {
                     Arg::new("provider")
                         .short('p')
                         .long("provider")
+                        .help("The Remote provider to use (not implemented yet)")
                         .default_value("github")
                         .takes_value(true),
                 )
@@ -23,6 +24,7 @@ fn main() {
                         Arg::new("force")
                             .short('f')
                             .long("force")
+                            .help("Ignores current credentials")
                             .takes_value(false),
                     ),
                 )
@@ -39,13 +41,13 @@ fn main() {
                             Arg::new("skip-update")
                                 .short('u')
                                 .long("skip-update")
-                                .help("Skip package updates"),
+                                .help("Skip update for outdated Packages"),
                         )
                         .arg(
                             Arg::new("skip-remove")
                                 .short('r')
                                 .long("skip-remove")
-                                .help("Skip package remove"),
+                                .help("Skip removal of Packages not found in the backup"),
                         ),
                 )
                 .subcommand(command!("inspect"))
