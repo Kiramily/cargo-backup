@@ -1,16 +1,9 @@
-use cargo_backup::{
-    restore,
-    web::{
-        github::{self},
-        provider::Backup,
-        types::github::OAuth,
-    },
-};
+use cargo_backup::get_packages;
+use cargo_backup::remote::RemoteProvider;
+use cargo_backup::{install_packages, remote::github::Github};
 use clap::{command, Arg, Command};
-use std::fs;
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args = Command::new("cargo")
         .about("Restores a backup created by cargo-backup")
         .version(env!("CARGO_PKG_VERSION"))
@@ -18,13 +11,50 @@ async fn main() {
         .bin_name("cargo")
         .subcommand(
             command!("sync")
-                .subcommand(command!("login"))
+                .arg(
+                    Arg::new("provider")
+                        .short('p')
+                        .long("provider")
+                        .help("The Remote provider to use (not implemented yet)")
+                        .default_value("github")
+                        .takes_value(true),
+                )
+                .subcommand(
+                    command!("login").arg(
+                        Arg::new("force")
+                            .short('f')
+                            .long("force")
+                            .help("Ignores current credentials")
+                            .takes_value(false),
+                    ),
+                )
                 .subcommand(command!("push"))
-                .subcommand(command!("pull"))
+                .subcommand(
+                    command!("pull")
+                        .arg(
+                            Arg::new("skip-install")
+                                .short('i')
+                                .long("skip-install")
+                                .help("Skip package installation"),
+                        )
+                        .arg(
+                            Arg::new("skip-update")
+                                .short('u')
+                                .long("skip-update")
+                                .help("Skip update for outdated Packages"),
+                        )
+                        .arg(
+                            Arg::new("skip-remove")
+                                .short('r')
+                                .long("skip-remove")
+                                .help("Skip removal of Packages not found in the backup"),
+                        ),
+                )
+                .subcommand(command!("inspect"))
                 .subcommand(
                     command!("set-id").arg(
                         Arg::new("id")
-                            .help("The ID of the backup to restore")
+                            .help("The ID of the backup to restore from")
                             .required(true)
                             .index(1),
                     ),
@@ -32,44 +62,31 @@ async fn main() {
         )
         .get_matches();
 
-    let git = github::Api::new().await;
-
     match args.subcommand() {
         Some(("sync", args)) => {
+            let provider = Github::new();
+
             match args.subcommand() {
-                Some(("login", _)) => {
-                    git.login().await.expect("Failed to login");
-                    println!("Successfully logged in");
+                Some(("pull", args)) => {
+                    let packages = provider.pull().unwrap();
+                    install_packages(
+                        &packages,
+                        args.is_present("skip-install"),
+                        args.is_present("skip-update"),
+                        args.is_present("skip-remove"),
+                    )
                 }
                 Some(("push", _)) => {
-                    git.push_backup().await.expect("Failed to push backup");
+                    let packages = get_packages();
+                    provider.push(&packages).unwrap();
                 }
-                Some(("pull", _)) => {
-                    let packages = git.fetch_backup().await.expect("Failed to pull backup");
-
-                    restore(&packages);
+                Some(("login", args)) => {
+                    let force = args.is_present("force");
+                    provider.login(force).unwrap();
                 }
-                Some(("set-id", args)) => {
-                    // println!("Setting ID to {}", args.value_of("id").unwrap());
-                    let mut auth_file = dirs::config_dir().unwrap();
-                    auth_file.push("cargo-backup/github.auth");
-
-                    let mut auth_content: OAuth = OAuth::default();
-
-                    if auth_file.exists() {
-                        auth_content = serde_json::from_reader(
-                            fs::File::open(&auth_file).expect("Failed to open auth file"),
-                        )
-                        .expect("Failed to parse auth file");
-                    }
-
-                    auth_content.gist_id = Some(args.value_of("id").unwrap().to_string());
-
-                    let mut auth_file =
-                        fs::File::create(&auth_file).expect("Failed to create auth file");
-                    serde_json::to_writer_pretty(&mut auth_file, &auth_content)
-                        .expect("Failed to write auth file");
-                }
+                Some(("set-id", args)) => provider
+                    .set_id(args.value_of("id").unwrap().to_string())
+                    .unwrap(),
                 _ => unreachable!(),
             }
         }

@@ -1,0 +1,39 @@
+{
+	"installs": {
+		"package 0.5.2 (registry+https://example.com/package": {
+			"version_req": null,
+			"features": [],
+			"all_features": false,
+			"no_default_features": false,
+			"profile": "release"
+		},
+		"super-cool-thing 2.6.0 (registry+https://example.com/package)": {
+			"version_req": null,
+			"features": [],
+			"all_features": true,
+			"no_default_features": false,
+			"profile": "release"
+		},
+		"even-cooler-thing 0.2.0 (registry+https://example.com/package)": {
+			"version_req": null,
+			"features": ["feature1", "feature2"],
+			"all_features": false,
+			"no_default_features": true,
+			"profile": "release"
+		},
+		"local-thing 0.2.0 (path+file:///path/to/thing)": {
+			"version_req": null,
+			"features": ["feature1", "feature2"],
+			"all_features": false,
+			"no_default_features": true,
+			"profile": "release"
+		},
+		"git-thing 0.0.0 (git+https://github.com/<user>/<repo>#hash)": {
+			"version_req": null,
+			"features": ["feature1", "feature2"],
+			"all_features": false,
+			"no_default_features": true,
+			"profile": "release"
+		}
+	}
+}
