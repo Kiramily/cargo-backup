@@ -1,6 +1,6 @@
 [package]
 name = "cargo-backup"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 authors = ["Kiramily"]
 keywords = ["cli", "backup", "restore", "github", "sync"]
@@ -28,7 +28,7 @@ path = "src/bin/sync.rs"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-clap = { version = "3.1.15", features = ["cargo"] }
+clap = { version = "4.0.9", features = ["cargo"] }
 dirs = "4.0.0"
 shellexpand = "2.1.0"
 semver = { version = "1.0.10", features = ["serde"] }
