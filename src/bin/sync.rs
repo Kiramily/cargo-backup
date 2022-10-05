@@ -1,7 +1,8 @@
 use cargo_backup::get_packages;
 use cargo_backup::remote::RemoteProvider;
 use cargo_backup::{install_packages, remote::github::Github};
-use clap::{command, Arg, Command};
+use clap::builder::ValueParser;
+use clap::{command, Arg, ArgAction, Command};
 
 fn main() {
     let args = Command::new("cargo")
@@ -17,7 +18,8 @@ fn main() {
                         .long("provider")
                         .help("The Remote provider to use (not implemented yet)")
                         .default_value("github")
-                        .takes_value(true),
+                        // TODO: Create a value parser
+                        .value_parser(ValueParser::string()),
                 )
                 .subcommand(
                     command!("login").arg(
@@ -25,7 +27,7 @@ fn main() {
                             .short('f')
                             .long("force")
                             .help("Ignores current credentials")
-                            .takes_value(false),
+                            .action(ArgAction::SetTrue),
                     ),
                 )
                 .subcommand(command!("push"))
@@ -35,22 +37,24 @@ fn main() {
                             Arg::new("skip-install")
                                 .short('i')
                                 .long("skip-install")
-                                .help("Skip package installation"),
+                                .help("Skip package installation")
+                                .action(ArgAction::SetTrue),
                         )
                         .arg(
                             Arg::new("skip-update")
                                 .short('u')
                                 .long("skip-update")
-                                .help("Skip update for outdated Packages"),
+                                .help("Skip update for outdated Packages")
+                                .action(ArgAction::SetTrue),
                         )
                         .arg(
                             Arg::new("skip-remove")
                                 .short('r')
                                 .long("skip-remove")
-                                .help("Skip removal of Packages not found in the backup"),
+                                .help("Skip removal of Packages not found in the backup")
+                                .action(ArgAction::SetTrue),
                         ),
                 )
-                .subcommand(command!("inspect"))
                 .subcommand(
                     command!("set-id").arg(
                         Arg::new("id")
@@ -71,9 +75,9 @@ fn main() {
                     let packages = provider.pull().unwrap();
                     install_packages(
                         &packages,
-                        args.is_present("skip-install"),
-                        args.is_present("skip-update"),
-                        args.is_present("skip-remove"),
+                        args.get_flag("skip-install"),
+                        args.get_flag("skip-update"),
+                        args.get_flag("skip-remove"),
                     )
                 }
                 Some(("push", _)) => {
@@ -81,11 +85,11 @@ fn main() {
                     provider.push(&packages).unwrap();
                 }
                 Some(("login", args)) => {
-                    let force = args.is_present("force");
+                    let force = args.get_flag("force");
                     provider.login(force).unwrap();
                 }
                 Some(("set-id", args)) => provider
-                    .set_id(args.value_of("id").unwrap().to_string())
+                    .set_id(args.get_one::<String>("id").unwrap().to_string())
                     .unwrap(),
                 _ => unreachable!(),
             }
