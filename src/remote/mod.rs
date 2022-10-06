@@ -2,7 +2,7 @@ use crate::Package;
 use serde::{de, ser};
 use std::{
     error::Error,
-    fs::{create_dir, read_to_string, remove_file, write},
+    fs::{create_dir, read_to_string, write},
 };
 
 pub mod github;
@@ -72,15 +72,11 @@ where
 {
     let path = dirs::config_dir().unwrap().join("cargo-backup");
 
-    if path.exists() {
+    if !path.exists() {
         create_dir(&path).unwrap();
     }
 
-    let path = path.join(T::get_name());
-
-    if path.exists() {
-        remove_file(&path).unwrap();
-    }
+    let path = path.join(format!("{}.toml", T::get_name()));
 
     write(&path, toml::to_string(&config).unwrap()).unwrap();
 }
