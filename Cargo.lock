@@ -114,7 +114,7 @@ checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
 name = "cargo-backup"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "clap",
  "dialoguer",
