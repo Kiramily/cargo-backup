@@ -78,5 +78,5 @@ where
 
     let path = path.join(format!("{}.toml", T::get_name()));
 
-    write(&path, toml::to_string(&config).unwrap()).unwrap();
+    write(path, toml::to_string(&config).unwrap()).unwrap();
 }

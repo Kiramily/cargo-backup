@@ -33,7 +33,7 @@ impl Github {
 
 impl RemoteProvider for Github {
     fn get_keyring() -> keyring::Entry {
-        keyring::Entry::new("cargo-backup", "github")
+        keyring::Entry::new("cargo-backup", "github").expect("Could not open keyring")
     }
 
     fn new() -> Self {
@@ -98,7 +98,7 @@ impl RemoteProvider for Github {
                 "User-Agent",
                 &format!("CargoBackup/{}", env!("CARGO_PKG_VERSION")),
             )
-            .send_json(&json!({
+            .send_json(json!({
                 "description": "Cargo Package Backup (Created by cargo-backup https://github.com/Kiramily/cargo-backup)",
                 "public": false,
                 "files": {
